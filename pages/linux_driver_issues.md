@@ -1,7 +1,7 @@
 ---
-layout: post
+layout: page
 title: Linux Drivers failed after upgrade
-permalink: linux_drivers_failed
+permalink: /linux_driver_issues/
 ---
 # Ubuntu Kernel / GPU Driver Notes
 

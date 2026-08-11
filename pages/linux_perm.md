@@ -1,3 +1,9 @@
+---
+layout: page
+title: Linux permissions
+permalink: /linux_perm/
+---
+
 # Linux Permissions — Important Edge Cases
 
 Linux permissions are divided into:
