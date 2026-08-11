@@ -1,4 +1,8 @@
 title: CyberSec Path
 theme: minima
+
+url: "https://prophetz3ro.github.io"
+baseurl: "/pages"
+
 header_pages:
   - pages/notes.md
