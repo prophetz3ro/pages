@@ -1,4 +1,4 @@
 title: CyberSec Path
 theme: minima
 header_pages:
-  - notes.md
+  - pages/notes.md
