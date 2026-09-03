@@ -1,7 +1,7 @@
 ---
 layout: page
 title: VM networking
-permalink: /vm_networking/
+permalink: /lab_networking/
 ---
 # Network Bridge — Essentials
 

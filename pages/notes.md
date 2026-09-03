@@ -11,3 +11,4 @@ permalink: /notes/
 - [ELF]({{ "/elf/" | relative_url }})
 - [Driver issues]({{ "/linux_driver_issues/" | relative_url }})
 - [Linux Permissions]({{ "/linux_perm/" | relative_url }})
+- [Lab Networking]({{ "/lab_networking/" | relative_url }})

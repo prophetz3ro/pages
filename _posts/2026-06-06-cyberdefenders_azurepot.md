@@ -80,17 +80,6 @@ The `-o` flag allows additional mount options to be specified. In this case, `ro
 
 Once mounted, the filesystem becomes accessible under `/mnt/vhd`.
 
-<figure>
-  <img
-    src="{{ '/assets/images/posts/azurePot/mount.webp' | relative_url }}"
-    alt="Mounted VHD using Linux loop devices"
-    width="900">
-
-  <figcaption>
-    Mounting the VHD using Linux loop devices
-  </figcaption>
-</figure>
-
 > **Forensic Note:** When working with disk images, it is generally recommended to mount them read-only. This helps preserve the integrity of the evidence and prevents accidental modifications during analysis.
 
 ## Alternative Approach: guestmount
