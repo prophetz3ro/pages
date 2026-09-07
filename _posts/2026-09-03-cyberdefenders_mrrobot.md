@@ -12,6 +12,36 @@ I am using REMnux, which comes with Volatility 3. However, the lab appears to ha
 
 Throughout this write-up, I will explain not only which commands we can use, but also why we use them and the reasoning behind each step.
 
+## Identifying the Volatility profile
+
+Before analysing the memory image, I stored its path in the `$T1` variable:
+
+```bash
+T1=/home/remnux/Downloads/temp_extract_dir/target1/Target1-1dd8701f.vmss
+```
+
+Volatility 2 requires a profile describing the operating system version, architecture, and relevant kernel structures. I used `imageinfo` to identify suitable profiles:
+
+```bash
+./volatility_2.6_lin64_standalone -f $T1 imageinfo
+```
+
+![profile]({{ "/assets/images/posts/mrrobot/profile.webp" | relative_url }})
+
+The plugin suggested the following profiles:
+
+```text
+Win7SP1x86_23418, Win7SP0x86, Win7SP1x86
+```
+
+The results indicate a 32-bit Windows 7 memory image. I selected `Win7SP1x86`, which successfully parsed the system structures and produced consistent results throughout the investigation:
+
+```text
+--profile=Win7SP1x86
+```
+
+All subsequent Volatility commands therefore use this profile.
+
 
 ## Question 1: Phishing email address
 
@@ -392,3 +422,115 @@ The recovered entry was:
 The first timestamp is the file creation time from the NTFS `$STANDARD_INFORMATION` attribute.
 
 **Answer:** `2015-10-09 10:45:12 UTC+0000`
+
+## Question 12: First machine found by `nbtscan`
+
+> **Machine:** Target1  
+> **Question:** The attackers stored the output from `nbtscan.exe` in a text file called `nbs.txt`. What is the IP address of the first machine in that file?
+
+I used `filescan` to locate the `nbs.txt` file object in memory:
+
+```bash
+./volatility_2.6_lin64_standalone -f $T1 --profile=Win7SP1x86 filescan | grep -i 'nbs'
+```
+
+The file was found at the following physical offset:
+
+```text
+0x000000003fdb7808 \Device\HarddiskVolume2\Windows\Temp\nbs.txt
+```
+
+I supplied the `_FILE_OBJECT` offset to `dumpfiles`:
+
+```bash
+./volatility_2.6_lin64_standalone -f $T1 --profile=Win7SP1x86 dumpfiles -Q 0x000000003fdb7808 --dump-dir dump2/
+```
+
+Volatility recovered the file as `file.None.0x83eda598.dat`. I displayed its contents:
+
+```bash
+cat dump2/file.None.0x83eda598.dat
+```
+
+The file contained:
+
+```text
+10.1.1.2     ALLSAFECYBERSEC\AD01           SHARING DC
+10.1.1.3     ALLSAFECYBERSEC\EX01           SHARING
+10.1.1.20    ALLSAFECYBERSEC\FRONT-DESK-PC  SHARING
+10.1.1.21    ALLSAFECYBERSEC\GIDEON-PC       SHARING
+```
+
+The first machine listed is `AD01`.
+
+**Answer:** `10.1.1.2`
+
+## Question 13: Malware network connection
+
+> **Machine:** Target1  
+> **Question:** What full IP address and port was the attacker's malware using?
+
+I used Volatility's `netscan` plugin to examine network connections present in memory:
+
+```bash
+./volatility_2.6_lin64_standalone -f $T1 --profile=Win7SP1x86 netscan
+```
+
+The output showed an established TCP connection associated with `iexplore.exe` and PID `2996`, which was previously identified as the injected process:
+
+```text
+TCPv4  10.1.1.20:49205  180.76.254.120:22  ESTABLISHED  2996  iexplore.exe
+```
+
+![cmdscan]({{ "/assets/images/posts/mrrobot/cmdscan.webp" | relative_url }})
+
+The fields show:
+
+- `10.1.1.20:49205` — local address and ephemeral source port
+- `180.76.254.120:22` — remote address and destination port
+- `ESTABLISHED` — the connection was active
+- `2996` — PID of the injected `iexplore.exe` process
+
+This connects the previously identified injected process to the attacker-controlled IP address.
+
+**Answer:** `180.76.254.120:22`
+
+## Question 14: Remote administration software
+
+> **Machine:** Target1  
+> **Question:** It appears the attacker also installed legitimate remote administration software. What is the name of the running process?
+
+I reviewed the active processes using `pslist`:
+
+```bash
+./volatility_2.6_lin64_standalone -f $T1 --profile=Win7SP1x86 pslist
+```
+
+The output contained several processes associated with TeamViewer, including:
+
+![TeamViewer]({{ "/assets/images/posts/mrrobot/teamviewer.webp" | relative_url }})
+
+The primary TeamViewer process was `TeamViewer.exe` with PID `2680`.
+
+**Answer:** `TeamViewer.exe`
+
+## Question 15: Built-in remote access
+
+> **Machine:** Target1  
+> **Question:** It appears the attackers also used a built-in remote access method. What IP address did they connect to?
+
+I examined the network connections using `netscan`:
+
+```bash
+./volatility_2.6_lin64_standalone -f $T1 --profile=Win7SP1x86 netscan
+```
+
+The output showed an established connection associated with `mstsc.exe`:
+
+![mstsc]({{ "/assets/images/posts/mrrobot/mstsc.webp" | relative_url }})
+
+`mstsc.exe` is the built-in Microsoft Remote Desktop Connection client, while TCP port `3389` is the standard port used by RDP.
+
+The local system at `10.1.1.20` connected to the remote system at `10.1.1.21`. Based on the earlier `nbtscan` results, this address belonged to `GIDEON-PC`.
+
+**Answer:** `10.1.1.21`
