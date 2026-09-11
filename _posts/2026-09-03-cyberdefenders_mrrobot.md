@@ -1,8 +1,11 @@
 ---
 layout: post
-title: "Cyberdefenders Mr. Robot"
+title: "Cyberdefenders Mr. Robot - part 1"
 date: 2026-09-03
 ---
+
+![MrRobot]({{ "/assets/images/posts/mrrobot/mrrobot.webp" | relative_url }})
+
 
 ## Introduction
 
@@ -19,6 +22,8 @@ Before analysing the memory image, I stored its path in the `$T1` variable:
 ```bash
 T1=/home/remnux/Downloads/temp_extract_dir/target1/Target1-1dd8701f.vmss
 ```
+
+
 
 Volatility 2 requires a profile describing the operating system version, architecture, and relevant kernel structures. I used `imageinfo` to identify suitable profiles:
 
@@ -59,6 +64,16 @@ I stored the path to the Target1 memory image in the `$T1` variable:
 ```bash
 T1=/home/remnux/Downloads/temp_extract_dir/target1/Target1-1dd8701f.vmss
 ```
+A `.vmss` file is a **VMware suspended-state file**.
+
+When a VMware virtual machine is suspended, VMware saves:
+
+- CPU state
+- Device state
+- VM execution metadata
+- The virtual machine's memory state
+
+For memory forensics, a `.vmss` file can often be analysed with Volatility because it preserves the guest system's physical memory at the time of suspension.
 
 Next, I listed the active processes:
 
@@ -206,7 +221,7 @@ The `-o` option specifies the virtual offset of the registry hive, while `-K` sp
 
 The output contained the following suspicious value:
 
-![hivelist]({{ "/assets/images/posts/mrrobot/printkey.webp" | relative_url }})
+![printkey]({{ "/assets/images/posts/mrrobot/printkey.webp" | relative_url }})
 
 
 Here, `MrRobot` is the registry value name, while the associated data points to the malware executable. This entry causes the malware to start when a user logs on.
@@ -338,11 +353,11 @@ Their likely purposes are:
 - `nbtscan.exe` — a network-reconnaissance tool used to scan for NetBIOS systems.
 - `Rar.exe` — a legitimate command-line archiving utility that can be abused to compress collected data or unpack attacker tooling.
 
-`wce.exe` appeared more than once in the output, but these entries refer to the same filename and should be counted as one tool.
+`wce.exe` and `getlsasrvaddr.exe` are part of one tool and should be counted as one.
 
 The temporary-directory location does not prove that every file is malicious. However, the combination of their functionality, location, and surrounding evidence indicates that they were likely staged by the attacker.
 
-**Answer:** `4`
+**Answer:** `3`
 
 ## Question 10: Front desk Administrator password
 
@@ -421,7 +436,7 @@ The recovered entry was:
 
 The first timestamp is the file creation time from the NTFS `$STANDARD_INFORMATION` attribute.
 
-**Answer:** `2015-10-09 10:45:12 UTC+0000`
+**Answer:** `2015-10-09 10:45:12 UTC`
 
 ## Question 12: First machine found by `nbtscan`
 
@@ -534,3 +549,5 @@ The output showed an established connection associated with `mstsc.exe`:
 The local system at `10.1.1.20` connected to the remote system at `10.1.1.21`. Based on the earlier `nbtscan` results, this address belonged to `GIDEON-PC`.
 
 **Answer:** `10.1.1.21`
+
+## End of part 1
